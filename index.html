@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuánta luz entrará en tu casa: simulador de farola</title>
+<style>
+:root{
+  --paper:#f5f0e6; --card:#fcfaf5; --ink:#1d1b18; --ink2:#55514a; --muted:#8a857b;
+  --rule:#e2dccf; --night:#18203a; --night2:#232d50; --amber:#e3a21f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;padding:0 0 72px}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 28px 0}
+header{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:end;border-bottom:1.5px solid var(--ink);padding-bottom:22px}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,4.4vw,54px);line-height:1.02;margin:0;letter-spacing:-.01em}
+h1 em{font-style:italic;color:#9a6a08}
+.lede{color:var(--ink2);margin:0;font-size:15.5px}
+h2{font-family:var(--serif);font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--ink2);margin:0 0 18px;font-size:14px}
+
+.main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;margin-top:28px}
+.controls{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:20px 20px 8px;align-self:start}
+.ctl{margin-bottom:18px}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px}
+.ctl label span.v{font-variant-numeric:tabular-nums;font-weight:700;color:#7a5306}
+.ctl .hint{font-size:12px;color:var(--muted);margin-top:4px}
+input[type=range]{width:100%;accent-color:#b07a10}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:12.5px;border:1px solid var(--rule);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.optics{display:grid;gap:6px}
+.optics button{font:inherit;text-align:left;border:1px solid var(--rule);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+.optics button .sw{width:10px;height:10px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+.optics button b{display:block;font-size:13px}
+.optics button small{color:var(--muted);font-size:11.5px;line-height:1.3;display:block}
+.optics button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.presets button em{margin-left:auto;font-style:normal;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap;padding-left:6px}
+.verdict-models{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.model{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px;min-width:0}
+.model .tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.model h3{font-family:var(--serif);font-weight:500;font-size:20px;margin:2px 0 6px}
+.model .lx{font-family:var(--serif);font-size:34px;line-height:1}
+.model .lx small{font-family:var(--sans);font-size:14px;color:var(--ink2)}
+.model p{font-size:13px;color:var(--ink2);margin:8px 0 0}
+.model .k{display:inline-block;font-size:11.5px;border:1px solid var(--rule);border-radius:999px;padding:1px 8px;margin-top:8px}
+@media (max-width:900px){.verdict-models{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+
+.stage{min-width:0;display:grid;gap:18px}
+.scene{background:var(--night);border-radius:16px;overflow:hidden;position:relative;height:clamp(300px,44vh,430px)}
+.scene svg{width:100%;height:100%;display:block}
+.readout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:14px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px 18px;min-width:0}
+.tile .lab{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.tile .big{font-family:var(--serif);font-size:46px;line-height:1.05;margin:4px 0 2px}
+.tile .big small{font-size:18px;color:var(--ink2);font-family:var(--sans)}
+.verdict{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-top:6px}
+.verdict .ic{width:20px;height:20px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.meter{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#1b2340,#3a4a7a 30%,#c9a24a 62%,#f7e3a0 85%,#fff7dc);margin:30px 0 26px}
+.meter .tick{position:absolute;top:-4px;width:1px;height:18px;background:var(--ink2)}
+.meter .tick span{position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:10.5px;white-space:nowrap;color:var(--ink2)}
+.meter .tick.b span{top:20px}
+.meter .pin{position:absolute;top:-7px;width:4px;height:24px;margin-left:-2px;background:var(--ink);border-radius:2px;transition:left .25s}
+.small{font-size:12.5px;color:var(--ink2);margin:0}
+
+section.block{margin-top:44px;border-top:1px solid var(--rule);padding-top:26px}
+.chartwrap{position:relative;width:100%;height:clamp(260px,38vh,380px);background:var(--card);border:1px solid var(--rule);border-radius:14px;overflow:hidden;min-width:0}
+.chartwrap svg{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.tip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--rule);box-shadow:0 6px 20px rgba(0,0,0,.12);border-radius:10px;padding:8px 11px;font-size:12.5px;opacity:0;transition:opacity .12s;min-width:190px}
+.tip .h{font-weight:700;margin-bottom:4px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .r i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+ol.ask{margin:0;padding:0;list-style:none;counter-reset:a}
+ol.ask li{counter-increment:a;position:relative;padding:0 0 14px 40px;border-bottom:1px dashed var(--rule);margin-bottom:14px}
+ol.ask li::before{content:counter(a);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-family:var(--serif);font-size:15px}
+ol.ask b{display:block}
+ol.ask span{color:var(--ink2);font-size:14px}
+.letter{background:#fffdf7;border:1px solid var(--rule);border-radius:14px;padding:18px 20px;font-family:var(--serif);font-size:15.5px;line-height:1.55;white-space:pre-wrap}
+.copy{margin-top:10px;font:inherit;font-size:13px;background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:8px 16px;cursor:pointer}
+.notes{font-size:13px;color:var(--ink2);columns:2;column-gap:32px}
+.notes p{margin:0 0 10px;break-inside:avoid}
+a{color:#7a5306}
+@media (max-width:900px){
+  header,.main,.two{grid-template-columns:minmax(0,1fr)}
+  .readout{grid-template-columns:minmax(0,1fr)}
+  .notes{columns:1}
+}
+@media print{
+  body{padding:0}
+  .controls{break-inside:avoid}
+  .copy{display:none}
+  section.block{break-inside:avoid}
+  .scene,.meter{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="kicker">Simulador de luz intrusa · farola a pie de casa</div>
+    <h1>¿Cuánta luz de la farola <em>entrará en tu casa?</em></h1>
+  </div>
+  <p class="lede">Compara los modelos que os proponen y mueve los controles para ver cuántos lux llegarían a tu ventana. A 3&nbsp;metros, la altura y la forma de la luminaria cuentan más que la potencia. Una farola de 2,5&nbsp;m apunta casi en horizontal a una ventana de planta baja. Una baliza de 60&nbsp;cm queda por debajo de la ventana e ilumina el suelo.</p>
+</header>
+
+<div class="main">
+  <aside class="controls" aria-label="Parámetros">
+    <div class="ctl">
+      <label>Modelos que os proponen</label>
+      <div class="optics presets" id="presets"></div>
+      <div class="hint">La cifra de la derecha es la luz en tu ventana con tu distancia y tu altura de ventana.</div>
+    </div>
+    <div class="ctl">
+      <label>O prueba un tipo genérico</label>
+      <div class="optics" id="optics"></div>
+    </div>
+    <div class="ctl">
+      <label for="dist">Distancia farola → fachada <span class="v" id="vDist"></span></label>
+      <input id="dist" type="range" min="1" max="15" step="0.5" value="3">
+    </div>
+    <div class="ctl">
+      <label for="hLamp">Altura del punto de luz <span class="v" id="vH"></span></label>
+      <input id="hLamp" type="range" min="0.5" max="9" step="0.05" value="2.5">
+      <div class="hint">Tu farola actual: 3&nbsp;m · las propuestas: 2,5&nbsp;m · balizas: unos 0,55&nbsp;m.</div>
+    </div>
+    <div class="ctl">
+      <label for="hWin">Altura de tu ventana <span class="v" id="vW"></span></label>
+      <input id="hWin" type="range" min="0.5" max="7" step="0.25" value="1.5">
+      <div class="hint">Centro de la ventana: planta baja ≈ 1,5&nbsp;m · primera planta ≈ 4,5&nbsp;m.</div>
+    </div>
+    <div class="ctl">
+      <label for="lum">Flujo luminoso <span class="v" id="vLum"></span></label>
+      <input id="lum" type="range" min="200" max="8000" step="10" value="1580">
+      <div class="hint">LED de 20&nbsp;W ≈ 2.500–3.000&nbsp;lm · 40&nbsp;W ≈ 5.000–6.000&nbsp;lm. Aparece en la ficha técnica.</div>
+    </div>
+    <div class="ctl">
+      <label>Regulación nocturna</label>
+      <div class="seg" id="dim"></div>
+      <div class="hint">Muchas LED bajan su potencia a partir de medianoche.</div>
+    </div>
+    <div class="ctl">
+      <label>Temperatura de color</label>
+      <div class="seg" id="cct"></div>
+      <div class="hint" id="cctHint"></div>
+    </div>
+    <div class="ctl">
+      <label>Tipo de zona (para el límite legal)</label>
+      <div class="seg" id="zone"></div>
+    </div>
+  </aside>
+
+  <div class="stage">
+    <div class="scene" id="scene" role="img" aria-label="Sección de la calle con la farola y tu fachada"></div>
+    <div class="readout">
+      <div class="tile">
+        <div class="lab">Luz sobre tu ventana</div>
+        <div class="big"><span id="ev">0</span> <small>lux</small></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="tile" style="grid-column:span 2">
+        <div class="lab">Dónde queda en la escala de la noche</div>
+        <div class="meter" id="meter"></div>
+        <p class="small" id="meterNote"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="block">
+  <h2>Los cuatro modelos de la propuesta, en tu ventana</h2>
+  <p class="sub" id="modelsSub"></p>
+  <div class="verdict-models" id="models"></div>
+  <p class="small" style="margin-top:14px"><b>¿Se puede poner a 2200&nbsp;K?</b> Con estas dos farolas, no. Las dos llevan el LED integrado con un color fijo: la Nefarius solo se vende en 3000&nbsp;K y la Tarasu en 2700&nbsp;K. La ficha dice que el LED solo lo puede cambiar un profesional, y no hay una versión de 2200&nbsp;K. Las dos son además no regulables, así que tampoco se pueden bajar de noche. Para tener 2200&nbsp;K hay que elegir otro modelo que ya venga así. En balizas hay bastantes: por ejemplo, la <a href="https://iluminacioncoben.com/baliza-jardin/lombardo-ago-baliza-h600-2l-negro-anodizado.html#/1420-temperatura_de_color_botones_de_radio-3000k_calida" target="_blank" rel="noopener">Lombardo AGO H600</a> se vende en 2200, 2700, 3000 o 4000&nbsp;K. De las dos farolas, la Tarasu da una luz más cálida, pero también más lúmenes y una cabeza con difusor que se ve brillar desde lejos.</p>
+</section>
+
+<section class="block">
+  <h2>La misma luz, cinco tipos de luminaria</h2>
+  <p class="sub">Lux en tu ventana según la distancia, con la altura, el flujo y la regulación que tengas seleccionados. La línea vertical marca tu distancia. Escala logarítmica: cada línea horizontal es diez veces más luz. Todas las curvas usan la altura seleccionada; con una baliza por debajo de la ventana la luz directa es casi nula y su curva queda pegada al fondo.</p>
+  <div class="legend" id="legend"></div>
+  <div class="chartwrap" id="chart"><div class="tip" id="tip"></div></div>
+</section>
+
+<section class="block two">
+  <div>
+    <h2>Qué pedir antes de que instalen</h2>
+    <p class="sub">Pídelo por escrito a la junta o al administrador de la urbanización, antes de que se compre el material.</p>
+    <ol class="ask">
+      <li><b>Óptica asimétrica con pantalla trasera</b><span>También llamada «house side shield» o «backlight control». Envía la luz hacia la calle y corta la que va hacia tu fachada. A tu distancia es la medida que más reduce la luz.</span></li>
+      <li><b>Cero luz hacia arriba (FHS = 0&nbsp;%)</b><span>Nada de faroles tipo globo o villa con difusor opal: reparten luz en todas direcciones, también hacia tus ventanas.</span></li>
+      <li><b>Luz cálida: 2700&nbsp;K o menos</b><span>Las de 4000&nbsp;K o más se ven más blancas y deslumbran más. 2200&nbsp;K (ámbar) es lo menos molesto.</span></li>
+      <li><b>Flujo ajustado y regulación nocturna</b><span>Un tope de lúmenes por punto de luz y que bajen al 50&nbsp;% o menos a partir de cierta hora.</span></li>
+      <li><b>Cálculo luminotécnico con tu ventana</b><span>El instalador puede sacar con un programa de cálculo (DIALux, Relux) los lux en tu fachada. Pide que ese valor quede por debajo del límite.</span></li>
+      <li><b>Mide ahora cómo está</b><span>Una app de luxómetro en el móvil, apoyado en el cristal de noche y por fuera. No es precisa con tan poca luz, pero sirve para comparar antes y después.</span></li>
+    </ol>
+  </div>
+  <div>
+    <h2>Borrador para la comunidad</h2>
+    <p class="sub">Se rellena solo con lo que tengas seleccionado. Ajusta los datos antes de enviarlo.</p>
+    <div class="letter" id="letter"></div>
+    <button class="copy" id="copy">Copiar texto</button>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Cómo leer esto</h2>
+  <div class="notes">
+    <p><b>Qué es un lux.</b> Mide cuánta luz cae sobre una superficie. La luna llena da unos 0,1–0,3&nbsp;lux; un salón iluminado, 100–300. Con la vista acostumbrada a la oscuridad, 1–5&nbsp;lux en la ventana bastan para moverte por casa sin encender la luz, que es lo que te pasa ahora.</p>
+    <p><b>El límite legal.</b> El Real Decreto 1890/2008 (instrucción ITC‑EA‑03, tabla&nbsp;3) fija como máximo de luz en ventanas 5&nbsp;lux en zonas periurbanas o rurales (E2) y 10&nbsp;lux en zonas urbanas residenciales (E3). También limita la intensidad de la farola hacia la vivienda a 7.500 y 10.000&nbsp;cd. <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2008-18634" target="_blank" rel="noopener">Texto en el BOE</a>.</p>
+    <p><b>Ojo con el ámbito.</b> Ese reglamento se aplica a instalaciones de más de 1&nbsp;kW. El alumbrado de una urbanización pequeña podría quedar por debajo, pero el valor sigue siendo la referencia técnica que usan los proyectistas. Tu comunidad autónoma o tu ayuntamiento pueden tener una ordenanza de contaminación lumínica más estricta: merece la pena consultarla.</p>
+    <p><b>Es una estimación.</b> El simulador usa curvas de luz típicas: la Nefarius como un panel que ilumina hacia abajo, la Tarasu como una cabeza con difusor y las balizas como luz hacia el suelo bajo un sombrerete. Solo cuenta la luz que va directa a la ventana. La que rebota en el suelo añade algo, normalmente menos de 1&nbsp;lux con balizas. Cada modelo tiene su propia curva: con la ficha fotométrica del fabricante (archivo IES o LDT) se puede calcular el valor exacto. Muros, setos o persianas reducen la luz que entra de verdad.</p>
+  </div>
+</section>
+</div>
+
+<script>
+// Curvas de intensidad típicas (cd por cada 1000 lm), gamma 0..180 cada 10°
+const OPTICS = [
+  {id:'globe',  name:'Farol o globo sin apantallar', desc:'Difusor opal, emite en todas direcciones', color:'var(--s1)', hex:'#2a78d6',
+    back:[80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,60,45,30,20], front:null},
+  {id:'lamb',   name:'Simétrica, luz hacia abajo', desc:'Cono redondo, sin pantalla lateral', color:'var(--s2)', hex:'#eb6834',
+    back:[318,313,299,275,244,204,159,109,55,0,0,0,0,0,0,0,0,0,0], front:null},
+  {id:'asym',   name:'Vial asimétrica', desc:'Tira la luz hacia la calle, algo escapa atrás', color:'var(--s3)', hex:'#1baf7a',
+    back:[250,235,215,185,150,110,70,38,14,3,0,0,0,0,0,0,0,0,0],
+    front:[250,260,285,330,390,440,420,260,60,5,0,0,0,0,0,0,0,0,0]},
+  {id:'shield', name:'Vial con pantalla trasera', desc:'Corta la luz hacia tu fachada', color:'var(--s4)', hex:'#eda100',
+    back:[220,175,115,60,25,10,5,3,1,0,0,0,0,0,0,0,0,0,0],
+    front:[250,260,285,330,390,440,420,260,60,5,0,0,0,0,0,0,0,0,0]},
+  {id:'bol', name:'Baliza con sombrerete', desc:'A media altura, luz hacia el suelo', color:'var(--s5)', hex:'#e87ba4',
+    back:[0,20,40,60,80,100,120,130,120,60,5,0,0,0,0,0,0,0,0], front:null}
+];
+const SHORT = {globe:'Globo / difusor', lamb:'Hacia abajo', asym:'Vial asimétrica', shield:'Con pantalla', bol:'Baliza'};
+// Modelos del anexo de la propuesta (datos de las fichas de las tiendas)
+const PRESETS = [
+  {id:'nef', name:'Arcchio Nefarius', kind:'Farola 2,5 m', optic:'lamb', H:2.5, lm:1580, cct:3000, fixedCct:true, note:'18 W · 1.580 lm · 3000 K fijo · no regulable', url:'https://www.lampara.es/p/lampara-exterior-led-arcchio-nefarius-250-cm-gris-oscuro-ip65-10047324.html'},
+  {id:'tar', name:'Lucande Tarasu', kind:'Farola 2,5 m', optic:'globe', H:2.5, lm:2010, cct:2700, fixedCct:true, note:'36 W · 2.010 lm · 2700 K fijo · no regulable · cabeza con difusor', url:'https://www.lampara.es/p/lampara-exterior-led-lucande-tarasu-gris-250-cm-aluminio-ip65-10047099.html'},
+  {id:'bn', name:'Baliza negra 10 W', kind:'Baliza 60 cm', optic:'bol', H:0.55, lm:800, cct:3000, fixedCct:true, note:'10 W · 3000 K · lúmenes no publicados (estimo ~800)', url:'https://llumslights.com/products/baliza-bolardo-exterior60cm-negro'},
+  {id:'bc', name:'Baliza corten 6 W', kind:'Baliza 60 cm', optic:'bol', H:0.55, lm:420, cct:3000, fixedCct:true, note:'6 W · 420 lm · 3000 K · salida lateral: oriéntala hacia el camino', url:'https://iluminacioncoben.com/baliza-jardin/mantraaran-600-baliza-ip65-6w-3000k-corten.html'}
+];
+const CCTS = [
+  {k:2200, c:'#ffb35c', t:'Ámbar: la menos molesta y la que menos afecta al sueño y a la fauna.'},
+  {k:2700, c:'#ffc982', t:'Cálida. Recomendable para zonas residenciales.'},
+  {k:3000, c:'#ffd9a6', t:'Blanco cálido. Aceptable; pide 2700 K si puedes.'},
+  {k:4000, c:'#fff1dc', t:'Blanco neutro: más deslumbrante y con más luz azul. Evítala junto a casas.'},
+  {k:5000, c:'#f1f4ff', t:'Blanco frío: la más molesta. No la aceptes junto a viviendas.'}
+];
+const ZONES = [{id:'E2',label:'Periurbana / rural (E2)',ev:5,cd:7500},{id:'E3',label:'Urbana residencial (E3)',ev:10,cd:10000}];
+const DIMS = [1,0.7,0.5,0.3];
+
+const S = {optic:'lamb', d:3, H:2.5, hw:1.5, lm:1580, dim:1, cct:3000, zone:'E3', preset:'nef'};
+function applyPreset(p){ Object.assign(S,{optic:p.optic,H:p.H,lm:p.lm,cct:p.cct,dim:1,preset:p.id}); $('hLamp').value=p.H; $('lum').value=p.lm; render(); }
+
+const $ = id => document.getElementById(id);
+const fmt = (x, n) => x.toLocaleString('es-ES',{maximumFractionDigits:n, minimumFractionDigits:0});
+function fmtLux(x){ if(x<0.1) return x<0.01?'<0,01':fmt(x,2); if(x<10) return fmt(x,1); return fmt(x,0); }
+
+function interp(tab, g){ g=Math.max(0,Math.min(180,g)); const i=Math.floor(g/10), f=(g-i*10)/10; return tab[i]+(tab[Math.min(18,i+1)]-tab[i])*f; }
+function intensity(o, g, side){ const tab = side==='front' && o.front ? o.front : o.back; return interp(tab,g); }
+function calc(o, d, H, hw, lm, dim){
+  const dz = H - hw, r = Math.hypot(d, dz);
+  const g = Math.atan2(d, dz) * 180/Math.PI;
+  const I = intensity(o,g,'back') * lm/1000 * dim;
+  return {ev: I * d / (r*r*r), I, g, r};
+}
+
+// Controles
+function buildSeg(el, items, key, labelFn){
+  el.innerHTML='';
+  items.forEach(it=>{ const v = typeof it==='object' ? (it.id||it.k) : it;
+    const b=document.createElement('button'); b.type='button'; b.textContent=labelFn(it);
+    b.className = S[key]===v?'on':''; b.onclick=()=>{S[key]=v; render();}; el.appendChild(b); });
+}
+function buildOptics(){
+  const el=$('optics'); el.innerHTML='';
+  OPTICS.forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.className=S.optic===o.id?'on':'';
+    b.innerHTML=`<span class="sw" style="background:${o.hex}"></span><span><b>${o.name}</b><small>${o.desc}</small></span>`;
+    b.onclick=()=>{S.optic=o.id; S.preset=null; render();}; el.appendChild(b); });
+}
+[['dist','d'],['hLamp','H'],['hWin','hw'],['lum','lm']].forEach(([id,k])=>{ $(id).addEventListener('input',e=>{S[k]=+e.target.value; if(k==='H'||k==='lm') S.preset=null; render();}); });
+function buildPresets(){
+  const el=$('presets'); el.innerHTML='';
+  PRESETS.forEach(p=>{ const o=OPTICS.find(x=>x.id===p.optic); const ev=calc(o,S.d,p.H,S.hw,p.lm,1).ev;
+    const b=document.createElement('button'); b.type='button'; b.className=S.preset===p.id?'on':'';
+    b.innerHTML=`<span class="sw" style="background:${o.hex}"></span><span><b>${p.name}</b><small>${p.kind} · ${p.lm.toLocaleString('es-ES')} lm · ${p.cct} K</small></span><em>${fmtLux(ev)} lx</em>`;
+    b.onclick=()=>applyPreset(p); el.appendChild(b); });
+}
+
+// Escena
+function drawScene(){
+  const el=$('scene'); const W=el.clientWidth||800, Ht=el.clientHeight||400;
+  const o=OPTICS.find(x=>x.id===S.optic); const cc=CCTS.find(c=>c.k===S.cct).c;
+  const res=calc(o,S.d,S.H,S.hw,S.lm,S.dim);
+  const groundY=Ht-46, spanM=S.d+5.5, topM=Math.max(S.H,S.hw+1.6,6)+1;
+  const s=Math.min((W-40)/spanM, (groundY-20)/topM);
+  const lx = W*0.5 - (S.d*s)/2 - s*0.6, fx = lx + S.d*s, ly = groundY - S.H*s, wy = groundY - S.hw*s;
+  const scale = S.lm/1000*S.dim;
+  let rays='';
+  for(let a=-89; a<=179; a+=1.5){
+    // a: ángulo desde la vertical; positivo = hacia tu casa
+    const side = a>=0?'back':'front'; const g=Math.abs(a);
+    if(g>180) continue;
+    const I = intensity(o,g,side)*scale; if(I<=0.5) continue;
+    const op = Math.min(0.55, Math.max(0, Math.log10(I)/3.6 - 0.3)) ;
+    const L = 2200; const a1=(a-0.8)*Math.PI/180, a2=(a+0.8)*Math.PI/180;
+    rays += `<path d="M${lx},${ly} L${lx+Math.sin(a1)*L},${ly+Math.cos(a1)*L} L${lx+Math.sin(a2)*L},${ly+Math.cos(a2)*L}Z" fill="${cc}" opacity="${op.toFixed(3)}"/>`;
+  }
+  // brillo interior según lux en la ventana
+  const ev=res.ev; const t=Math.max(0,Math.min(1,(Math.log10(Math.max(ev,0.001))+2)/3.3));
+  const roomFill = `rgba(${Math.round(255*t)},${Math.round(225*t)},${Math.round(170*t)},${(0.15+0.75*t).toFixed(2)})`;
+  const furn = `rgba(20,24,40,${(0.25+0.6*t).toFixed(2)})`;
+  const winH=1.2*s, winW=Math.max(14,0.25*s);
+  const houseW = W - fx;
+  const roofY = Math.min(groundY - 6.6*s, wy - winH);
+  const lamp = o.id==='globe'
+    ? `<circle cx="${lx}" cy="${ly}" r="${0.22*s}" fill="${cc}" opacity=".95"/><circle cx="${lx}" cy="${ly}" r="${0.6*s}" fill="${cc}" opacity=".15"/>`
+    : o.id==='bol'
+    ? `<rect x="${lx-0.14*s}" y="${ly-0.06*s}" width="${0.28*s}" height="${0.05*s}" rx="2" fill="#525c84"/><rect x="${lx-0.08*s}" y="${ly-0.01*s}" width="${0.16*s}" height="${0.03*s}" fill="${cc}"/>`
+    : `<path d="M${lx-0.35*s},${ly-0.08*s} h${0.7*s} l-${0.1*s},${0.12*s} h-${0.5*s}Z" fill="#2c3352" stroke="#525c84"/><rect x="${lx-0.25*s}" y="${ly+0.02*s}" width="${0.5*s}" height="${0.04*s}" fill="${cc}"/>${o.id==='shield'?`<rect x="${lx+0.25*s}" y="${ly-0.06*s}" width="${0.05*s}" height="${0.22*s}" fill="#525c84"/>`:''}`;
+  const stars = Array.from({length:28},(_,i)=>`<circle cx="${(i*97.3)%W}" cy="${(i*41.7)%(groundY*0.45)}" r="${i%3?0.8:1.3}" fill="#fff" opacity="${0.25+(i%4)*0.12}"/>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${Ht}" width="${W}" height="${Ht}">
+    <defs><clipPath id="sky"><rect x="0" y="0" width="${fx}" height="${groundY}"/></clipPath></defs>
+    <rect width="${W}" height="${Ht}" fill="var(--night)"/>${stars}
+    <g clip-path="url(#sky)">${rays}</g>
+    <rect x="0" y="${groundY}" width="${W}" height="${Ht-groundY}" fill="#11172b"/>
+    <line x1="0" y1="${groundY}" x2="${W}" y2="${groundY}" stroke="#3a4469"/>
+    <rect x="${fx}" y="${roofY}" width="${houseW}" height="${groundY-roofY}" fill="#2a3253"/>
+    <rect x="${fx+winW}" y="${wy-winH/2}" width="${Math.min(houseW-2*winW, 3.2*s)}" height="${winH}" fill="${roomFill}"/>
+    <rect x="${fx+winW+0.4*s}" y="${wy+winH/2-0.55*s}" width="${0.9*s}" height="${0.55*s}" rx="3" fill="${furn}"/>
+    <rect x="${fx+winW+1.6*s}" y="${wy-winH/2+0.15*s}" width="${0.5*s}" height="${0.35*s}" fill="${furn}"/>
+    <rect x="${fx}" y="${wy-winH/2}" width="${winW}" height="${winH}" fill="#a9c4ff" opacity="${(0.25+0.6*t).toFixed(2)}"/>
+    <rect x="${lx-0.05*s}" y="${ly}" width="${0.1*s}" height="${groundY-ly}" fill="#3b4570"/>
+    ${lamp}
+    <line x1="${lx}" y1="${ly}" x2="${fx}" y2="${wy}" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity=".7"/>
+    <circle cx="${fx}" cy="${wy}" r="4" fill="#fff"/>
+    <g font-family="system-ui,sans-serif" font-size="12" fill="#c9cfe6">
+      <line x1="${lx}" y1="${groundY+16}" x2="${fx}" y2="${groundY+16}" stroke="#8a93b8"/>
+      <line x1="${lx}" y1="${groundY+11}" x2="${lx}" y2="${groundY+21}" stroke="#8a93b8"/><line x1="${fx}" y1="${groundY+11}" x2="${fx}" y2="${groundY+21}" stroke="#8a93b8"/>
+      <text x="${(lx+fx)/2}" y="${groundY+34}" text-anchor="middle">${fmt(S.d,1)} m</text>
+      <text x="${lx-10}" y="${(ly+groundY)/2}" text-anchor="end">${fmt(S.H,1)} m</text>
+      <text x="${fx+8}" y="${roofY-8}" fill="#e9ecf8">Tu casa · interior visto con esta luz</text>
+      <text x="14" y="22" fill="#e9ecf8" font-size="13">Hacia la calle</text>
+      <text x="${fx-10}" y="${wy-12}" text-anchor="end" fill="#fff" font-weight="600">${fmtLux(ev)} lux</text>
+    </g></svg>`;
+  return res;
+}
+
+function status(ev, zone){
+  if(ev < 1) return {c:'var(--good)', i:'✓', t:'Casi imperceptible dentro de casa.'};
+  if(ev < zone.ev/2) return {c:'var(--warn)', i:'!', t:'Dentro del límite, pero se nota: con la vista acostumbrada verás los muebles.'};
+  if(ev <= zone.ev) return {c:'var(--serious)', i:'!', t:`Roza el máximo legal de ${zone.ev} lux para zona ${zone.id}. Tu casa quedará claramente iluminada.`};
+  return {c:'var(--crit)', i:'✕', t:`Supera el máximo de ${zone.ev} lux en ventanas para zona ${zone.id} (ITC‑EA‑03).`};
+}
+
+function drawMeter(ev, zone){
+  const pos = v => Math.max(0,Math.min(100,(Math.log10(v)+2)/4.5*100)); // 0,01 .. ~300 lux
+  const ticks = [[0.01,'Noche sin luna',0],[0.25,'Luna llena',1],[1,'Te mueves sin luz',0],[zone.ev,`Límite ${zone.id}`,1],[100,'Salón encendido',0]];
+  $('meter').innerHTML = ticks.map(([v,l,b])=>`<div class="tick ${b?'b':''}" style="left:${pos(v)}%"><span>${l}</span></div>`).join('') + `<div class="pin" style="left:${pos(Math.max(ev,0.01))}%" title="${fmtLux(ev)} lux"></div>`;
+}
+
+// Gráfico
+function drawChart(){
+  const wrap=$('chart'); const W=wrap.clientWidth, H=wrap.clientHeight;
+  const m={l:52,r:110,t:18,b:40}, iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const xmin=1,xmax=15, ymin=-1, ymax=2.5;
+  const X=d=>m.l+(d-xmin)/(xmax-xmin)*iw, Y=v=>m.t+(1-(Math.log10(Math.max(v,0.1))-ymin)/(ymax-ymin))*ih;
+  const zone=ZONES.find(z=>z.id===S.zone);
+  let g='';
+  [0.1,1,10,100].forEach(v=>{ g+=`<line x1="${m.l}" x2="${m.l+iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e1e0d9"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="#898781">${fmt(v,1)}</text>`; });
+  for(let d=1; d<=15; d+=2) g+=`<text x="${X(d)}" y="${m.t+ih+18}" text-anchor="middle" font-size="11" fill="#898781">${d} m</text>`;
+  g+=`<text x="${m.l}" y="${m.t+ih+34}" font-size="11" fill="#898781">Distancia farola → fachada</text>`;
+  g+=`<line x1="${m.l}" x2="${m.l+iw}" y1="${m.t+ih}" y2="${m.t+ih}" stroke="#c3c2b7"/>`;
+  [[5,'Límite E2 · 5 lux'],[10,'Límite E3 · 10 lux']].forEach(([v,l])=>{ const on = v===zone.ev;
+    g+=`<line x1="${m.l}" x2="${m.l+iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${on?'#52514e':'#c3c2b7'}" stroke-dasharray="5 4" stroke-width="${on?1.5:1}"/><text x="${m.l+iw-4}" y="${Y(v)-5}" text-anchor="end" font-size="11" fill="${on?'#0b0b0b':'#898781'}">${l}</text>`; });
+  g+=`<line x1="${X(S.d)}" x2="${X(S.d)}" y1="${m.t}" y2="${m.t+ih}" stroke="#0b0b0b" stroke-width="1"/><text x="${X(S.d)+5}" y="${m.t+10}" font-size="11" fill="#0b0b0b">tu farola</text>`;
+  const labels=[];
+  OPTICS.forEach(o=>{
+    let p=''; for(let d=xmin; d<=xmax+1e-9; d+=0.1){ const v=calc(o,d,S.H,S.hw,S.lm,S.dim).ev; p+=(p?'L':'M')+X(d).toFixed(1)+','+Y(v).toFixed(1); }
+    const sel=o.id===S.optic;
+    g+=`<path d="${p}" fill="none" stroke="${o.hex}" stroke-width="${sel?3:2}" opacity="${sel?1:0.75}" stroke-linejoin="round"/>`;
+    const here=calc(o,S.d,S.H,S.hw,S.lm,S.dim).ev;
+    g+=`<circle cx="${X(S.d)}" cy="${Y(here)}" r="5" fill="${o.hex}" stroke="#fcfcfb" stroke-width="2"/>`;
+    labels.push({y:Y(calc(o,xmax,S.H,S.hw,S.lm,S.dim).ev), t:SHORT[o.id], c:o.hex});
+  });
+  labels.sort((a,b)=>a.y-b.y); for(let i=1;i<labels.length;i++) if(labels[i].y-labels[i-1].y<14) labels[i].y=labels[i-1].y+14;
+  labels.forEach(l=>{ g+=`<rect x="${m.l+iw+8}" y="${l.y-1.5}" width="8" height="3" rx="1.5" fill="${l.c}"/><text x="${m.l+iw+20}" y="${l.y+4}" font-size="11.5" fill="#52514e">${l.t}</text>`; });
+  g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="#898781" stroke-dasharray="2 3" opacity="0"/><rect id="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  const svgEl = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="system-ui,sans-serif">${g}</svg>`;
+  wrap.querySelector('svg')?.remove(); wrap.insertAdjacentHTML('afterbegin', svgEl);
+  const tip=$('tip'), xh=wrap.querySelector('#xh');
+  wrap.querySelector('#hit').onmousemove=e=>{
+    const rect=wrap.getBoundingClientRect(); const px=e.clientX-rect.left;
+    const d=Math.round((xmin+(px-m.l)/iw*(xmax-xmin))*2)/2; const cx=X(d);
+    xh.setAttribute('x1',cx); xh.setAttribute('x2',cx); xh.setAttribute('opacity',1);
+    tip.innerHTML=`<div class="h">A ${fmt(d,1)} m de la fachada</div>`+OPTICS.map(o=>`<div class="r"><span><i style="background:${o.hex}"></i>${o.name}</span><b>${fmtLux(calc(o,d,S.H,S.hw,S.lm,S.dim).ev)} lx</b></div>`).join('');
+    tip.style.opacity=1; const tw=tip.offsetWidth; tip.style.left=Math.min(W-tw-8, cx+12)+'px'; tip.style.top=(m.t+8)+'px';
+  };
+  wrap.querySelector('#hit').onmouseleave=()=>{tip.style.opacity=0; xh.setAttribute('opacity',0);};
+  $('legend').innerHTML = OPTICS.map(o=>`<span><i style="background:${o.hex}"></i>${o.name}</span>`).join('');
+}
+
+function renderModels(zone){
+  $('modelsSub').textContent = `Calculado con tu farola a ${fmt(S.d,1)} m de la fachada y el centro de tu ventana a ${fmt(S.hw,2)} m del suelo, sin regulación. Cambia esos dos valores en el panel y se recalcula.`;
+  $('models').innerHTML = PRESETS.map(p=>{ const o=OPTICS.find(x=>x.id===p.optic); const ev=calc(o,S.d,p.H,S.hw,p.lm,1).ev; const st=status(ev,zone);
+    return `<div class="model"><div class="tag">${p.kind}</div><h3><a href="${p.url}" target="_blank" rel="noopener" style="color:inherit">${p.name}</a></h3>
+      <div class="lx">${fmtLux(ev)} <small>lux</small></div>
+      <div class="verdict"><span class="ic" style="background:${st.c}">${st.i}</span><span>${st.t}</span></div>
+      <p>${p.note}</p></div>`; }).join('');
+}
+
+function letter(res, zone){
+  const nef=PRESETS[0], tar=PRESETS[1];
+  const evOf=p=>calc(OPTICS.find(x=>x.id===p.optic),S.d,p.H,S.hw,p.lm,1).ev;
+  return `Estimada Junta / Administración:
+
+Sobre la propuesta de sustitución de las farolas (Anexo 1), os escribo por el punto de luz situado frente a mi vivienda, a unos ${fmt(S.d,1)} m de la fachada. Con la farola actual la luz entra en casa hasta el punto de que se ve el interior sin encender ninguna lámpara.
+
+Mi propuesta es sustituir las farolas por balizas bajas como las del propio anexo, colocando el doble de unidades para que el camino de acceso a las viviendas y la zona de jardines queden bien iluminados. Las balizas iluminan el suelo, que es lo que necesitamos, y apenas envían luz hacia las ventanas.
+
+Si finalmente se opta por farolas, pido que se tenga en cuenta lo siguiente:
+
+- Con los datos de las fichas, la ${nef.name} (${fmt(nef.lm,0)} lm a 2,5 m) daría unos ${fmtLux(evOf(nef))} lux en mi ventana, y la ${tar.name} (${fmt(tar.lm,0)} lm), unos ${fmtLux(evOf(tar))} lux. El límite de luz intrusa en ventanas de la ITC-EA-03 (RD 1890/2008) es de ${zone.ev} lux en zona ${zone.id}.
+- Ninguno de los dos modelos es regulable, y su color de luz es fijo (3000 K y 2700 K).
+- Solicito un modelo con la luz dirigida solo hacia abajo y hacia el camino, con pantalla hacia mi fachada, de 2700 K o menos (idealmente 2200 K) y con el menor flujo que permita iluminar el paso.
+- Solicito también que la cabeza de la farola se oriente hacia el camino, en sentido contrario a mi vivienda, y que se valore cambiar su ubicación si es posible.
+
+Quedo a vuestra disposición para verlo in situ.
+
+Un saludo,`;
+}
+
+function render(){
+  $('vDist').textContent=fmt(S.d,1)+' m'; $('vH').textContent=fmt(S.H,1)+' m'; $('vW').textContent=fmt(S.hw,2)+' m'; $('vLum').textContent=fmt(S.lm,0)+' lm';
+  buildOptics(); buildPresets();
+  buildSeg($('dim'), DIMS, 'dim', v=>v===1?'Sin regular':Math.round(v*100)+' %');
+  buildSeg($('cct'), CCTS, 'cct', c=>c.k+' K');
+  buildSeg($('zone'), ZONES, 'zone', z=>z.label);
+  const pr = PRESETS.find(p=>p.id===S.preset);
+  $('cctHint').textContent = (pr && S.cct!==pr.cct) ? `La ${pr.name} solo se vende en ${pr.cct} K: este color no se puede elegir con este modelo.` : CCTS.find(c=>c.k===S.cct).t;
+  if(pr && S.dim!==1 && pr.optic!=='bol'){ $('cctHint').textContent += ` Además, la ${pr.name} no es regulable.`; }
+  const zone=ZONES.find(z=>z.id===S.zone);
+  renderModels(zone);
+  const res=drawScene();
+  $('ev').textContent=fmtLux(res.ev);
+  const st=status(res.ev, zone);
+  $('verdict').innerHTML=`<span class="ic" style="background:${st.c}">${st.i}</span><span>${st.t}</span>`;
+  drawMeter(res.ev, zone);
+  const pct = res.I/zone.cd*100;
+  $('meterNote').textContent = `La farola envía unas ${fmt(res.I,0)} cd hacia tu ventana (el límite para zona ${zone.id} es ${fmt(zone.cd,0)} cd). La luz te llega con un ángulo de ${fmt(res.g,0)}° desde la vertical y recorre ${fmt(res.r,1)} m.`;
+  drawChart();
+  $('letter').textContent = letter(res, zone);
+}
+$('copy').onclick=()=>{
+  const txt=$('letter').textContent, done=()=>{$('copy').textContent='Copiado'; setTimeout(()=>$('copy').textContent='Copiar texto',1500);};
+  const fallback=()=>{ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} ta.remove(); };
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+};
+new ResizeObserver(()=>{ drawScene(); drawChart(); }).observe(document.body);
+render();
+</script>
+</body>
+</html>
